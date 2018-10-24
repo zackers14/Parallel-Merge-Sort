@@ -16,3 +16,9 @@
 
 ## TBD
 - How to use shared memory to improve this process
+- If used, mutex semaphores required
+- Maybe a shared memory segment created per parent
+
+## Anticipated Required Functions
+ - MergeSort(int[] array)
+ - Merge(int[] left, int[] right)
