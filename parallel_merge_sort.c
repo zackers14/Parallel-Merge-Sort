@@ -1,14 +1,13 @@
 /*********************************************************************
-* Programmer: Zachary Mericle                                        *
-* Last Edited: 10/14/18                                              *
+* Programmer: Zachary Mericle, Erica Romero, Ryan Fay                                        *
+* Last Edited: 10/24/18                                              *
 *                                                                    *
 **********************************************************************/
 
-/* This program creates a producer thread and consumer that
-   write to and read from a shared character buffer
+/* This program implements a parallel version of merge sort by
+creating a thread to handle each recursive call
 */
 
-#define _REENTRANT
 #include <pthread.h>
 #include <stdio.h>
 #include <sys/types.h>
