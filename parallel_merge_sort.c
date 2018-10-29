@@ -65,10 +65,10 @@ void normalMergeSort(int arr[], int arr_size)
       x++;
     }
 
-    /*Recurive call for mergesort of the lefthalf*/
+    /*Recurive call for normalMergeSort of the lefthalf*/
     normalMergeSort(lefthalf, mid);
 
-    /*Recurive call for mergesort of the righthalf*/
+    /*Recurive call for normalMergeSort of the righthalf*/
     normalMergeSort(righthalf, arr_size/2);
 
     int i = 0;
