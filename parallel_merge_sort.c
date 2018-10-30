@@ -1,6 +1,6 @@
 /*********************************************************************
-* Programmer: Zachary Mericle, Erica Romero, Ryan Fay                                        *
-* Last Edited: 10/24/18                                              *
+* Programmers: Zachary Mericle, Erica Romero, Ryan Fay, Courtney Shi  *
+* Last Edited: 10/29/18                                              *
 *                                                                    *
 **********************************************************************/
 
