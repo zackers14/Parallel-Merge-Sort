@@ -109,6 +109,87 @@ void normalMergeSort(int arr[], int arr_size)
   }
 }
 
+void mergeSort(int l, int r) 
+{ 
+	// Designed as per our whiteboard discussion last week
+
+	// 1.) Determine midpoint
+    int m = l+r/2; 
+	
+	/* 2.) Find ranges for left half, right half:
+			left = l to m
+			right = m+1 to r */
+	
+	// 3.) Create a thread for each half in array
+	
+	pthread_create(&tid1[0], &attr[0], mergeSort(arr, l, m), NULL);
+	pthread_create(&tid2[0], &attr[0], mergeSort(arr, m+1, r), NULL);
+  
+    // 4.) Wait for return 
+	pthread_join(tid1[0], NULL);
+	pthread_join(tid2[0], NULL);
+	
+	// 5.) merge 
+	
+    merge(l, m, r); 
+
+} 
+
+void merge(int l, int m, int r) 
+{ 
+    int i, j, k; 
+    int n1 = m - l + 1; 
+    int n2 =  r - m; 
+  
+    /* create temp arrays */
+    int L[n1], R[n2]; 
+  
+    /* Copy data to temp arrays L[] and R[] */
+    for (i = 0; i < n1; i++) 
+        L[i] = shared_mem->integer_array[l + i]; 
+    for (j = 0; j < n2; j++) 
+        R[j] = shared_mem->integer_array[m + 1+ j]; 
+  
+    /* Merge the temp arrays back into arr[l..r]*/
+    i = 0; // Initial index of first subarray 
+    j = 0; // Initial index of second subarray 
+    k = l; // Initial index of merged subarray 
+    while (i < n1 && j < n2) 
+    { 
+        if (L[i] <= R[j]) 
+        { 
+            shared_mem->integer_array[k] = L[i]; 
+            i++; 
+        } 
+        else
+        { 
+            shared_mem->integer_array[k] = R[j]; 
+            j++; 
+        } 
+        k++; 
+    } 
+  
+    /* Copy the remaining elements of L[], if there 
+       are any */
+    while (i < n1) 
+    { 
+        shared_mem->integer_array[k] = L[i]; 
+        i++; 
+        k++; 
+    } 
+  
+    /* Copy the remaining elements of R[], if there 
+       are any */
+    while (j < n2) 
+    { 
+        shared_mem->integer_array[k] = R[j]; 
+        j++; 
+        k++; 
+    } 
+} 
+
+
+
 /*CONTAINS SAMPLE MAIN WITH MULTIPLE ARRAYS FOR CHECKING NORMALMERGESORT
 int main() 
 {
