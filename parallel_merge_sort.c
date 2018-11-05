@@ -17,6 +17,7 @@ creating a thread to handle each recursive call
 #include <fcntl.h>
 #include <semaphore.h>
 #include <stdlib.h>
+#include <math.h>
 
 /*Key number */
 #define SHMKEY ((key_t) 9999)
@@ -108,33 +109,37 @@ void normalMergeSort(int arr[], int arr_size)
   }
 }
 
-void mergeSort(int leftIndex, int rightIndex) 
+void mergeSort(int minIndex, int maxIndex, int threadIndex) 
 { 
 	// Designed as per our whiteboard discussion last week
 
+    if (((maxIndex - minIndex) + 1) < 2){
+        return;
+    }
 	// 1.) Determine midpoint
-    int midpoint = (leftIndex+rightIndex)/2; 
+    int midpoint = floor((minIndex+maxIndex)/2); 
 	
-	/* 2.) Find ranges for left half, right half:
-			left = l to m
-			right = m+1 to r */
-	
+	// 2.) Find ranges for left half, right half:
+	int leftThreadIndex = 2*threadIndex+1; 
+    int rightThreadIndex = leftThreadIndex + 1;
+            
 	// 3.) Create a thread for each half in array
 	
-	pthread_create(&tid1[0], &attr[0], mergeSort(arr, l, m), NULL);
-	pthread_create(&tid2[0], &attr[0], mergeSort(arr, m+1, r), NULL);
+	pthread_create(&tids[leftThreadIndex], &attr[0], mergeSort(minIndex, midpoint, leftThreadIndex), NULL);
+	pthread_create(&tids[rightThreadIndex], &attr[0], mergeSort(midpoint+1, maxIndex, rightThreadIndex), NULL);
   
     // 4.) Wait for return 
-	pthread_join(tid1[0], NULL);
-	pthread_join(tid2[0], NULL);
+	pthread_join(tids[leftThreadIndex], NULL);
+	pthread_join(tids[rightThreadIndex], NULL);
 	
 	// 5.) merge 
 	
-    merge(); 
+    merge(minIndex, midpoint, maxIndex); 
 
 } 
 
-void merge() 
+void merge(int min, int mid, int max){
+     //Create temporary arrays for left and right half, merge them, then store in shared memory
 
 } 
 
