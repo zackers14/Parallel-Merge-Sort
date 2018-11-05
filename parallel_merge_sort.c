@@ -30,7 +30,6 @@ typedef struct
 pthread_t       tids[];
 pthread_attr_t  attr[1]; //Attribute pointer array
 shared_mem *sh_mem;
-sem_t mutex;
 
 void normalMergeSort(int arr[], int arr_size)
 {   
@@ -109,12 +108,12 @@ void normalMergeSort(int arr[], int arr_size)
   }
 }
 
-void mergeSort(int l, int r) 
+void mergeSort(int leftIndex, int rightIndex) 
 { 
 	// Designed as per our whiteboard discussion last week
 
 	// 1.) Determine midpoint
-    int m = l+r/2; 
+    int midpoint = (leftIndex+rightIndex)/2; 
 	
 	/* 2.) Find ranges for left half, right half:
 			left = l to m
@@ -131,61 +130,12 @@ void mergeSort(int l, int r)
 	
 	// 5.) merge 
 	
-    merge(l, m, r); 
+    merge(); 
 
 } 
 
-void merge(int l, int m, int r) 
-{ 
-    int i, j, k; 
-    int n1 = m - l + 1; 
-    int n2 =  r - m; 
-  
-    /* create temp arrays */
-    int L[n1], R[n2]; 
-  
-    /* Copy data to temp arrays L[] and R[] */
-    for (i = 0; i < n1; i++) 
-        L[i] = shared_mem->integer_array[l + i]; 
-    for (j = 0; j < n2; j++) 
-        R[j] = shared_mem->integer_array[m + 1+ j]; 
-  
-    /* Merge the temp arrays back into arr[l..r]*/
-    i = 0; // Initial index of first subarray 
-    j = 0; // Initial index of second subarray 
-    k = l; // Initial index of merged subarray 
-    while (i < n1 && j < n2) 
-    { 
-        if (L[i] <= R[j]) 
-        { 
-            shared_mem->integer_array[k] = L[i]; 
-            i++; 
-        } 
-        else
-        { 
-            shared_mem->integer_array[k] = R[j]; 
-            j++; 
-        } 
-        k++; 
-    } 
-  
-    /* Copy the remaining elements of L[], if there 
-       are any */
-    while (i < n1) 
-    { 
-        shared_mem->integer_array[k] = L[i]; 
-        i++; 
-        k++; 
-    } 
-  
-    /* Copy the remaining elements of R[], if there 
-       are any */
-    while (j < n2) 
-    { 
-        shared_mem->integer_array[k] = R[j]; 
-        j++; 
-        k++; 
-    } 
+void merge() 
+
 } 
 
 
@@ -194,33 +144,22 @@ void merge(int l, int m, int r)
 int main() 
 {
   //int arr[] = {12, 11, 13, 5, 6, 7}; 
-
   //int arr[] = {33, 12, 53, 4}; 
-
   //int arr[] = {100, 20, 12, 61, 89, 90, 40,71, 200}; 
-
   //int arr[] = {8, 403, 17, 15, 49, 10, 0, 15, 30};
-
   int arr[] = {60, 32, 1, 0, 3, 200, 1000, 4, 10, 19, 6000, 90, 2};
-
   int arr_size = sizeof(arr)/sizeof(arr[0]); 
   
   int i;
   
   printf("Original Array: ");
-
   for(i = 0; i < arr_size; i++)
     printf("%d ", arr[i]);
-
   normalMergeSort(arr, arr_size);
-
   printf("\nSorted Array: ");
-
   for(i = 0; i < arr_size; i++)
     printf("%d ", arr[i]);
-
   printf("\n");
-
   return 0; 
 }*/
 
@@ -231,49 +170,39 @@ int main(){
   int shmid;
   char * shmadd;
   shmadd = (char *) 0;
-
   //Initialize the three semaphores
   sem_init(&mutex, 0, 1);
   sem_init(&full, 0, 0);
   sem_init(&empty, 0, 15);
-
   //Create a shared memory section
   if ((shmid = shmget(SHMKEY, 15*sizeof(char), IPC_CREAT | 0666)) < 0){
     perror("shmget");
     exit(1);
   }
-
   //Connect to shared memory section
   if ((sh_mem = (shared_mem *) shmat(shmid, shmadd, 0)) == (shared_mem *)-1){
     perror("shmat");
     exit(0);
   }
-
   //Schedule thread independently
   pthread_attr_init(&attr[0]);
   pthread_attr_setscope(&attr[0], PTHREAD_SCOPE_SYSTEM);
   //Schedule thread independently END
-
   //Create threads
   pthread_create(&tid1[0], &attr[0], producer, NULL);
   pthread_create(&tid2[0], &attr[0], consumer, NULL);
-
   //Wait for threads to finish
   pthread_join(tid1[0], NULL);
   pthread_join(tid2[0], NULL);
-
   //Terminate semaphores
   sem_destroy(&mutex);
-
   //Detach and remove shared memory
   if (shmdt(sh_mem) == -1){
     perror("shmdt");
     exit(-1);
   }
   shmctl(shmid, IPC_RMID, NULL);
-
 //Terminate threads
   pthread_exit(NULL);
 }
-
 */
