@@ -1,13 +1,3 @@
-/*********************************************************************
-* Programmers: Zachary Mericle, Erica Romero, Ryan Fay, Courtney Shi  *
-* Last Edited: 10/29/18                                              *
-*                                                                    *
-**********************************************************************/
-
-/* This program implements a parallel version of merge sort by
-creating a thread to handle each recursive call
-*/
-
 #include <pthread.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -120,7 +110,7 @@ void mergeSort(int minIndex, int maxIndex, int threadIndex)
 	
 	// 2.) Find ranges for left half, right half:
 	int leftThreadIndex = 2*threadIndex+1; 
-    int rightThreadIndex = leftThreadIndex + 1;
+  int rightThreadIndex = leftThreadIndex + 1;
             
 	// 3.) Create a thread for each half in array
 	
@@ -138,7 +128,35 @@ void mergeSort(int minIndex, int maxIndex, int threadIndex)
 } 
 
 void merge(int min, int mid, int max){
-     //Create temporary arrays for left and right half, merge them, then store in shared memory
+  //Local array to store sorted array
+  int local_arr[max+1];
+  //Array to hold copy of array in shared memory
+  int copy_arr[max+1];
+
+  for (int i = 0; i < max+1; i++){
+    copy_arr[i] = sh_mem->integer_array[i];
+  }
+
+  //Iterators for each half of the given array
+  int leftIter = min;
+  int rightIter = mid;
+
+  //Go through whole array
+  for (i = min; i < max; i++){
+    if (leftIter < mid && (rightIter >= max || copy_arr[leftIter] <= copy_arr[rightIter])) {
+      local_arr[i] = copy_arr[leftIter];
+      leftIter += 1;
+    }
+    else {
+      local_arr[i] = copy_arr[rightIter];
+      rightIter += 1;
+    }
+  }
+
+  //Transfer sorted array into array in shared memory
+  for (int i = 0; i < max+1; i++){
+    sh_mem->integer_array[i] = local_arr[i];
+  }
 
 } 
 
