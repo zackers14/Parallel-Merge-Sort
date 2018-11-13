@@ -18,8 +18,21 @@ typedef struct
   int *integer_array;
 } shared_mem;
 
+struct args
+{
+  int minIndex;
+  int maxIndex;
+  int threadIndex;
+};
+
+void normalMergeSort(int[], int);
+void *mergeSort(void*);
+void merge(int, int, int);
+double report_running_time(char[], int);
+
 pthread_attr_t  attr[1]; //Attribute pointer array
 shared_mem *sh_mem;
+pthread_t *tids;
 
 struct timezone Idunno;
 struct timeval startTime, endTime;
@@ -101,37 +114,56 @@ void normalMergeSort(int arr[], int arr_size)
   }
 }
 
-void mergeSort(int minIndex, int maxIndex, int threadIndex)
+void* mergeSort(void *input)
 {
 	// Designed as per our whiteboard discussion last week
-
+  int maxIndex = ((struct args *)input)->maxIndex;
+  int minIndex = ((struct args *)input)->minIndex;
+  int threadIndex = ((struct args *)input)->threadIndex;
+    //printf("entering mergesort parallel\n");
     if (((maxIndex - minIndex) + 1) < 2){
+      //printf("Returning\n");
         return;
     }
 	// 1.) Determine midpoint
     int midpoint = floor((minIndex+maxIndex)/2);
-
+    //printf("midpoint calculated \n");
 	// 2.) Find ranges for left half, right half:
 	int leftThreadIndex = 2*threadIndex+1;
   int rightThreadIndex = leftThreadIndex + 1;
 
 	// 3.) Create a thread for each half in array
 
-	pthread_create(&tids[leftThreadIndex], &attr[0], mergeSort(minIndex, midpoint, leftThreadIndex), NULL);
-	pthread_create(&tids[rightThreadIndex], &attr[0], mergeSort(midpoint+1, maxIndex, rightThreadIndex), NULL);
+  //printf("left create %d min:%d max:%d\n", leftThreadIndex, minIndex, midpoint);
+  struct args *leftInput = (struct args *)malloc(sizeof(struct args));
+  struct args *rightInput = (struct args *)malloc(sizeof(struct args));
 
+  leftInput->minIndex = minIndex;
+  leftInput->maxIndex = midpoint;
+  leftInput->threadIndex = leftThreadIndex;
+
+  rightInput->minIndex = midpoint+1;
+  rightInput->maxIndex = maxIndex;
+  rightInput->threadIndex = rightThreadIndex;
+
+	pthread_create(&tids[leftThreadIndex], &attr[0], mergeSort, (void *)leftInput);
+  //printf("right created %d min:%d max:%d\n", rightThreadIndex, midpoint+1, maxIndex);
+  pthread_create(&tids[rightThreadIndex], &attr[0], mergeSort, (void *)rightInput);
+
+  //printf("Waiting\n");
     // 4.) Wait for return
 	pthread_join(tids[leftThreadIndex], NULL);
 	pthread_join(tids[rightThreadIndex], NULL);
 
 	// 5.) merge
-
+    //printf("merge called\n");
     merge(minIndex, midpoint, maxIndex);
 
 }
 
 void merge(int min, int mid, int max){
   //Local array to store sorted array
+  //printf("merge_arrsize\n");
   int merge_arr[(max-min)+1];
 
   //Calculated lengths of left and right arrays
@@ -142,6 +174,7 @@ void merge(int min, int mid, int max){
   int left_arr[left_len];
   int right_arr[right_len];
 
+  //printf("store values from sh mem into local \n");
   //Store values from shared memory for the set ranges
   for (int i = 0; i < left_len; i++){
     left_arr[i] = sh_mem->integer_array[i + min];
@@ -149,12 +182,13 @@ void merge(int min, int mid, int max){
   for (int j = 0; j < right_len; j++) {
 	  right_arr[j] = sh_mem->integer_array[mid + j + 1];
   }
-
+  //printf("iterators for each\n");
   //Iterators for each array
   int left_iter = 0;
   int right_iter = 0;
   int merge_iter = 0;
 
+  //printf("begin merge \n");
   //Begin merge of left and right arrays
   while (left_iter < left_len && right_iter < right_len) {
 
@@ -183,6 +217,7 @@ void merge(int min, int mid, int max){
 	  merge_iter++;
   }
 
+  //printf("transfer\n");
   //Transfer sorted array into array in shared memory
   for (int i = min, j = 0; i < max+1; i++, j++){
     sh_mem->integer_array[i] = merge_arr[j];
@@ -215,7 +250,7 @@ int main()
   return 0;
 }*/
 
-double report_running_time(char[] type, int size) {
+double report_running_time(char type[], int size) {
 	long sec_diff, usec_diff;
 	gettimeofday(&endTime, &Idunno);
 	sec_diff = endTime.tv_sec - startTime.tv_sec;
@@ -235,56 +270,74 @@ int main(int argc, char *argv[]){
   int shmid;
   int array_size = atoi(argv[1]);
   char * shmadd;
-
-  pthread_t tids[ceiling(array_size*(log10(array_size)/log10(2)))];
+  //printf("Thread creation\n");
+  int thread_size = (int) ceil(array_size*(log10(array_size)/log10(2)));
+  //printf("thread_size %d \n", thread_size);
+  tids = malloc(sizeof(pthread_t)*thread_size);
   int int_array[array_size];
-  sh_mem->integer_array = malloc(sizeof(int) * array_size);
+  //printf("sh_mem\n");
   time_t t;
 
-  srand((unsigned) time(&t));
+  //printf("srand\n");
 
-  for (int i = 0; i < array_size){
-    int random_integer = rand()%100;
-    int_array[i] = random_integer;
-    sh_mem->integer_array[i] = random_integer;
-  }
+  srand((unsigned) time(&t));
   shmadd = (char *) 0;
 
+  //printf("Shm creating... \n");
   //Create a shared memory section
   if ((shmid = shmget(SHMKEY, array_size*sizeof(int), IPC_CREAT | 0666)) < 0){
     perror("shmget");
     exit(1);
   }
+  //printf("Connecting to shm\n");
   //Connect to shared memory section
   if ((sh_mem = (shared_mem *) shmat(shmid, shmadd, 0)) == (shared_mem *)-1){
     perror("shmat");
     exit(0);
   }
+
+  sh_mem->integer_array = malloc(sizeof(int) * array_size);
+
+  //printf("Randomizing\n");
+  for (int i = 0; i < array_size; i++){
+    int random_integer = rand()%100;
+    int_array[i] = random_integer;
+    sh_mem->integer_array[i] = random_integer;
+  }
+
   //Schedule thread independently
   pthread_attr_init(&attr[0]);
   pthread_attr_setscope(&attr[0], PTHREAD_SCOPE_SYSTEM);
   //Schedule thread independently END
 
+  //printf("gettimeofday\n");
   gettimeofday(&startTime, &Idunno);
 
   normalMergeSort(int_array, array_size);
   report_running_time("Normal", array_size);
-  printf("\nSorted Array: ");
-  for(i = 0; i < array_size; i++)
+  //printf("\nSorted Array: ");
+  /*for(int i = 0; i < array_size; i++)
     printf("%d ", int_array[i]);
-  printf("\n");
+  printf("\n");*/
 
+  //printf("gettimeofday parallel\n");
   gettimeofday(&startTime, &Idunno);
 
-  pthread_create(&tids[0], &attr[0], mergeSort(0, array_size-1, 0), NULL);
+  //printf("create thread mergesort \n");
+  struct args *indices = (struct args *)malloc(sizeof(struct args));
+  indices->minIndex = 0;
+  indices->maxIndex = array_size-1;
+  indices->threadIndex = 0;
+  pthread_create(&tids[0], &attr[0], mergeSort, (void *)indices);
+
 
   pthread_join(tids[0], NULL);
 
-  repot_running_time("parallel", array_size);
+  report_running_time("parallel", array_size);
 
-  for(i = 0; i < array_size; i++)
+  /*for(int i = 0; i < array_size; i++)
     printf("%d ", sh_mem->integer_array[i]);
-  printf("\n");
+  printf("\n");*/
 
   //Detach and remove shared memory
   if (shmdt(sh_mem) == -1){
