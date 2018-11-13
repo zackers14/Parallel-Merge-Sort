@@ -22,9 +22,9 @@ pthread_attr_t  attr[1]; //Attribute pointer array
 shared_mem *sh_mem;
 
 void normalMergeSort(int arr[], int arr_size)
-{   
+{
   if(arr_size > 1)
-  {  
+  {
     int mid = arr_size/2;
 
     int remainder = arr_size%2;
@@ -37,9 +37,9 @@ void normalMergeSort(int arr[], int arr_size)
     int lefthalf[mid];
     int righthalf[arr_size-mid];
     int a;
-    int b;  
+    int b;
 
-    /*Stores the lowerhalf of the array into the lefthalf array*/  
+    /*Stores the lowerhalf of the array into the lefthalf array*/
     for(a = 0; a < mid; a++)
     {
       lefthalf[a] = arr[a];
@@ -48,7 +48,7 @@ void normalMergeSort(int arr[], int arr_size)
     int x = 0;
 
     /*Stores the upperhalf of the array into the righthalf array*/
-    for(b = mid; b < arr_size; b++) 
+    for(b = mid; b < arr_size; b++)
     {
       righthalf[x] = arr[b];
       x++;
@@ -62,78 +62,80 @@ void normalMergeSort(int arr[], int arr_size)
 
     int i = 0;
     int j = 0;
-    int k = 0;     
+    int k = 0;
 
     /*Compares the elements from the lefthalf and righthalf array, and sorts them before placing them into the arr array */
-    while (i < mid && j < arr_size-mid) 
-    { 
-        if (lefthalf[i] <= righthalf[j]) 
-        { 
+    while (i < mid && j < arr_size-mid)
+    {
+        if (lefthalf[i] <= righthalf[j])
+        {
             arr[k] = lefthalf[i];
-            i++; 
-        } 
+            i++;
+        }
         else
-        { 
+        {
             arr[k] = righthalf[j];
-            j++; 
-        } 
-        k++; 
-    } 
+            j++;
+        }
+        k++;
+    }
 
     /*Copies the remaining elements of the lefthand array, if any*/
-    while (i < mid) 
-    { 
-        arr[k] = lefthalf[i]; 
-        i++; 
-        k++; 
-    } 
+    while (i < mid)
+    {
+        arr[k] = lefthalf[i];
+        i++;
+        k++;
+    }
 
     /*Copies the remaining elements of the righthand array, if any*/
-    while (j < arr_size-mid) 
-    { 
-        arr[k] = righthalf[j]; 
-        j++; 
-        k++; 
-    } 
+    while (j < arr_size-mid)
+    {
+        arr[k] = righthalf[j];
+        j++;
+        k++;
+    }
   }
 }
 
-void mergeSort(int minIndex, int maxIndex, int threadIndex) 
-{ 
+void mergeSort(int minIndex, int maxIndex, int threadIndex)
+{
 	// Designed as per our whiteboard discussion last week
 
     if (((maxIndex - minIndex) + 1) < 2){
         return;
     }
 	// 1.) Determine midpoint
-    int midpoint = floor((minIndex+maxIndex)/2); 
-	
+    int midpoint = floor((minIndex+maxIndex)/2);
+
 	// 2.) Find ranges for left half, right half:
-	int leftThreadIndex = 2*threadIndex+1; 
+	int leftThreadIndex = 2*threadIndex+1;
   int rightThreadIndex = leftThreadIndex + 1;
-            
+
 	// 3.) Create a thread for each half in array
-	
+
 	pthread_create(&tids[leftThreadIndex], &attr[0], mergeSort(minIndex, midpoint, leftThreadIndex), NULL);
 	pthread_create(&tids[rightThreadIndex], &attr[0], mergeSort(midpoint+1, maxIndex, rightThreadIndex), NULL);
-  
-    // 4.) Wait for return 
+
+    // 4.) Wait for return
 	pthread_join(tids[leftThreadIndex], NULL);
 	pthread_join(tids[rightThreadIndex], NULL);
-	
-	// 5.) merge 
-	
-    merge(minIndex, midpoint, maxIndex); 
 
-} 
+	// 5.) merge
+
+    merge(minIndex, midpoint, maxIndex);
+
+}
 
 void merge(int min, int mid, int max){
   //Local array to store sorted array
-  int local_arr[max+1];
-  //Array to hold copy of array in shared memory
-  int copy_arr[max+1];
+  int local_arr[max+1]; // <-- Size should be max - min + 1 because only the left and right halves are necessary
+  // Local_Arr is fine for the left + right halves but you're going to need a left and right array
 
-  for (int i = 0; i < max+1; i++){
+  //Array to hold copy of array in shared memory
+  int copy_arr[max+1]; // Unnecessary
+
+  for (int i = 0; i < max+1; i++){ // <-- Unnecessary loop, should put left half in left array and right half in right array
     copy_arr[i] = sh_mem->integer_array[i];
   }
 
@@ -154,26 +156,26 @@ void merge(int min, int mid, int max){
   }
 
   //Transfer sorted array into array in shared memory
-  for (int i = 0; i < max+1; i++){
+  for (int i = 0; i < max+1; i++){ // <-- Should be i = min
     sh_mem->integer_array[i] = local_arr[i];
   }
 
-} 
+}
 
 
 
 /*CONTAINS SAMPLE MAIN WITH MULTIPLE ARRAYS FOR CHECKING NORMALMERGESORT
-int main() 
+int main()
 {
-  //int arr[] = {12, 11, 13, 5, 6, 7}; 
-  //int arr[] = {33, 12, 53, 4}; 
-  //int arr[] = {100, 20, 12, 61, 89, 90, 40,71, 200}; 
+  //int arr[] = {12, 11, 13, 5, 6, 7};
+  //int arr[] = {33, 12, 53, 4};
+  //int arr[] = {100, 20, 12, 61, 89, 90, 40,71, 200};
   //int arr[] = {8, 403, 17, 15, 49, 10, 0, 15, 30};
   int arr[] = {60, 32, 1, 0, 3, 200, 1000, 4, 10, 19, 6000, 90, 2};
-  int arr_size = sizeof(arr)/sizeof(arr[0]); 
-  
+  int arr_size = sizeof(arr)/sizeof(arr[0]);
+
   int i;
-  
+
   printf("Original Array: ");
   for(i = 0; i < arr_size; i++)
     printf("%d ", arr[i]);
@@ -182,7 +184,7 @@ int main()
   for(i = 0; i < arr_size; i++)
     printf("%d ", arr[i]);
   printf("\n");
-  return 0; 
+  return 0;
 }*/
 
 
@@ -195,7 +197,7 @@ int main(int argc, char *argv[]){
   pthread_t tids[ceiling(array_size*(log10(array_size)/log10(2)))];
 
   shmadd = (char *) 0;
-  
+
   //Create a shared memory section
   if ((shmid = shmget(SHMKEY, array_size*sizeof(int), IPC_CREAT | 0666)) < 0){
     perror("shmget");
