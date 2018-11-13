@@ -22,3 +22,8 @@
 ## Anticipated Required Functions
  - MergeSort(int[] array)
  - Merge(int[] left, int[] right)
+
+## How to compile:
+ - gcc parallel_merge_sort.c -lm -lpthread -o OS4
+ - ./OS4 n
+ - Where n >= 2 and n<= 12000
