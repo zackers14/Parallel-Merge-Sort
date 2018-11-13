@@ -129,35 +129,60 @@ void mergeSort(int minIndex, int maxIndex, int threadIndex)
 
 void merge(int min, int mid, int max){
   //Local array to store sorted array
-  int local_arr[max+1]; // <-- Size should be max - min + 1 because only the left and right halves are necessary
-  // Local_Arr is fine for the left + right halves but you're going to need a left and right array
+  int merge_arr[(max-min)+1]; 
+ 
+  //Calculated lengths of left and right arrays
+  int left_len = mid - min + 1;
+  int right_len = max - mid;
 
-  //Array to hold copy of array in shared memory
-  int copy_arr[max+1]; // Unnecessary
+  //Arrays to hold left and right values respectively
+  int left_arr[left_len]; 				  
+  int right_arr[right_len];
 
-  for (int i = 0; i < max+1; i++){ // <-- Unnecessary loop, should put left half in left array and right half in right array
-    copy_arr[i] = sh_mem->integer_array[i];
+  //Store values from shared memory for the set ranges
+  for (int i = 0; i < left_len; i++){
+    left_arr[i] = sh_mem->integer_array[i + min];
+  }
+  for (int j = 0; j < right_len; j++) { 
+	  right_arr[j] = sh_mem->integer_array[max + j + 1];
   }
 
-  //Iterators for each half of the given array
-  int leftIter = min;
-  int rightIter = mid;
+  //Iterators for each array
+  int left_iter = 0;
+  int right_iter = 0;
+  int merge_iter = min;
 
-  //Go through whole array
-  for (i = min; i < max; i++){
-    if (leftIter < mid && (rightIter >= max || copy_arr[leftIter] <= copy_arr[rightIter])) {
-      local_arr[i] = copy_arr[leftIter];
-      leftIter += 1;
-    }
-    else {
-      local_arr[i] = copy_arr[rightIter];
-      rightIter += 1;
-    }
+  //Begin merge of left and right arrays
+  while (left_iter < left_len && right_iter < right_len) {
+
+	  if (left_arr[left_iter] <= right_arr[right_iter]) 
+	  {
+		  merge_arr[merge_iter] = left_arr[left_iter];
+		  left_iter++;
+	  }
+	  else 
+	  {
+		  merge_arr[merge_iter] = right_arr[right_iter];
+		  right_iter++;
+	  }
+	  merge_iter++;
+  }
+  //Copy remaining elements if any into left array
+  while (left_iter < left_len) {
+	  merge_arr[merge_iter] = left_arr[left_iter];
+	  left_iter++;
+	  merge_iter++;
+  }
+  //Copy remaining elements if any into right array
+  while (right_iter < right_len) {
+	  merge_arr[merge_iter] = right_arr[right_iter];
+	  right_iter++;
+	  merge_iter++;
   }
 
   //Transfer sorted array into array in shared memory
-  for (int i = 0; i < max+1; i++){ // <-- Should be i = min
-    sh_mem->integer_array[i] = local_arr[i];
+  for (int i = min; i < max+1; i++){ // <-- Should be i = min
+    sh_mem->integer_array[i] = merge_arr[i];
   }
 
 }
