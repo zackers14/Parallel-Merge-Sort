@@ -27,3 +27,10 @@
  - gcc parallel_merge_sort.c -lm -lpthread -o OS4
  - ./OS4 n
  - Where n >= 2 and n<= 12000
+
+## Analysis
+ - The parallel version of merge sort runs slower than the normal one
+ - This is likely because of how expensive it is to create threads
+ - n can only go as high as about 12000, likely because that's either how big shared memory can get or there are too many threads
+ - The thread array is n*log2(n), because there are roughly that many calls to merge sort. This is a massive space complexity issue
+ - Overall, it's better to just run it the normal way. Maybe running on a GPU would be better with higher n sizes, because it's suited for this type of massive paralleization
