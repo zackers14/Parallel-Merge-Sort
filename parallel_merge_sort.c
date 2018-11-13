@@ -5,9 +5,9 @@
 #include <sys/shm.h>
 #include <sys/wait.h>
 #include <fcntl.h>
-#include <semaphore.h>
 #include <stdlib.h>
 #include <math.h>
+#include <sys/time.h>
 
 /*Key number */
 #define SHMKEY ((key_t) 9999)
@@ -15,11 +15,14 @@
 /* Shared structure with buffer */
 typedef struct
 {
-  int integer_array[];
+  int *integer_array;
 } shared_mem;
 
 pthread_attr_t  attr[1]; //Attribute pointer array
 shared_mem *sh_mem;
+
+struct timezone Idunno;
+struct timeval startTime, endTime;
 
 void normalMergeSort(int arr[], int arr_size)
 {
@@ -187,6 +190,19 @@ int main()
   return 0;
 }*/
 
+double report_running_time(char[] type, int size) {
+	long sec_diff, usec_diff;
+	gettimeofday(&endTime, &Idunno);
+	sec_diff = endTime.tv_sec - startTime.tv_sec;
+	usec_diff= endTime.tv_usec-startTime.tv_usec;
+	if(usec_diff < 0) {
+		sec_diff --;
+		usec_diff += 1000000;
+	}
+	printf("Running time for %s Mergesort of size %d: %ld.%06ld\n", type, size, sec_diff, usec_diff);
+	return (double)(sec_diff*1.0 + usec_diff/1000000.0);
+}
+
 
 
 int main(int argc, char *argv[]){
@@ -194,8 +210,19 @@ int main(int argc, char *argv[]){
   int shmid;
   int array_size = atoi(argv[1]);
   char * shmadd;
-  pthread_t tids[ceiling(array_size*(log10(array_size)/log10(2)))];
 
+  pthread_t tids[ceiling(array_size*(log10(array_size)/log10(2)))];
+  int int_array[array_size];
+  sh_mem->integer_array = malloc(sizeof(int) * array_size);
+  time_t t;
+
+  srand((unsigned) time(&t));
+
+  for (int i = 0; i < array_size){
+    int random_integer = rand()%100;
+    int_array[i] = random_integer;
+    sh_mem->integer_array[i] = random_integer;
+  }
   shmadd = (char *) 0;
 
   //Create a shared memory section
@@ -213,9 +240,26 @@ int main(int argc, char *argv[]){
   pthread_attr_setscope(&attr[0], PTHREAD_SCOPE_SYSTEM);
   //Schedule thread independently END
 
+  gettimeofday(&startTime, &Idunno);
+
+  normalMergeSort(int_array, array_size);
+  report_running_time("Normal", array_size);
+  printf("\nSorted Array: ");
+  for(i = 0; i < array_size; i++)
+    printf("%d ", int_array[i]);
+  printf("\n");
+
+  gettimeofday(&startTime, &Idunno);
+
   pthread_create(&tids[0], &attr[0], mergeSort(0, array_size-1, 0), NULL);
 
   pthread_join(tids[0], NULL);
+
+  repot_running_time("parallel", array_size);
+
+  for(i = 0; i < array_size; i++)
+    printf("%d ", sh_mem->integer_array[i]);
+  printf("\n");
 
   //Detach and remove shared memory
   if (shmdt(sh_mem) == -1){
